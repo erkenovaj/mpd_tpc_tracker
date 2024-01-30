@@ -20,3 +20,4 @@ Hotkeys:
 1) Press 'i' - Enable/Disable display of track indexes
 2) Press 's' - Enable/Disable display of data from simulation
 3) Press 't' - Enable/Disable display of track arcs
+4) When you enable multiple post-processing methods at the same time, you can use the number keys (1, 2, etc.) to switch visualization between them
