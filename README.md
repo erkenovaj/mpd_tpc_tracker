@@ -10,6 +10,16 @@ Repository organization:
 4) data_processing folder - contains software for loading data or type casting
 5) post_processing folder - Contains the post-processing methods we developed
 
+# OS and Python:
+_All tests were performed in Python-3.10 on Linux-22.04, Windows 10/11_
+
+# Installation:
+```shell
+pip install pandas pyopengl PyQt6 pyqtgraph scipy
+```
+
+Also you have to install tensorflow in your venv if you want to test post-processing based on Neural Net
+
 # Visualization:
 Navigation:
 1) Mouse wheel - Zoom
