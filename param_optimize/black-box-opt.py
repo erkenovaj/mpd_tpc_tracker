@@ -1,22 +1,20 @@
 import json
 import logging
+import warnings
 import optuna
+from acts_launcher import run
 
-logging.basicConfig(filename='example.log',
+logging.basicConfig(filename='param_history.json',
                     filemode='w', encoding='utf-8',
                     level=logging.INFO,
-                    format='%(levelname)s:%(message)s')
+                    format='%(message)s')
+warnings.filterwarnings("ignore", category=optuna.exceptions.ExperimentalWarning)
 
 search_space = {}
 
 fixed_params = {
-    "SeedZmin": None,
-    "SeedZmax": None,
-    "CotThetaMax": None,
-    "Bz": 0.5,
-    "Bmin": 0.5,
-    "Rmin": 40.0,
-    "Rmax": 125.5,
+    "EtaMax": 2.11,
+    "PtMin": 0.0,
     "CollisionZmin": -30.0,
     "CollisionZmax": 30.0,
     "BeamX": 0.0,
@@ -39,17 +37,43 @@ fixed_params = {
     "MultipleScattering": True,
     "EnergyLoss": True,
     "Smoothing": True,
-    "ComputeSharedHits": False
+    "ComputeSharedHits": False,
+    "TrackMinLength": 4,
+    "NewHitsInRow": 6,
+    "NewHitsRatio": 0.25,
+    "PostProcess": True,
+    "SelectorEnabled": True,
+    "PrimaryParticlesOnly": True,
+    "SelectorPhiMin": -3.15,
+    "SelectorPhiMax": 3.15,
+    "AbsEtaMin": 0,
+    "SelectorPtMax": 10.0,
+    "KeepNeutral": False,
+    "NHitsMin": 9,
+    "TruthMatchProbMin": 0.5,
+    "MeasurementsMin": 6,
+    "EtaNBins": 40,
+    "PhiNBins": 100,
+    "PtNBins": 40,
+    "PerfPlotToolPtMin": 0.0,
+    "PerfPlotToolPtMax": 2.5,
+    "NumNBins": 30,
+    "NumMin": -0.5,
+    "NumMax": 29.5,
+    "OnlyCertainTracks": False,
+    "DumpData": False,
+    "WriteTrajSummary": False
     }
 
 samplers_optuna = {
     'grid': optuna.samplers.GridSampler(search_space),
-    'random': optuna.samplers.RandomSampler(),
+    'random': optuna.samplers.RandomSampler(seed=0),
     'tpe': optuna.samplers.TPESampler(),
-    'bayes': optuna.integration.BoTorchSampler(),
     'cmaes': optuna.samplers.CmaEsSampler(),
     'nsgaii': optuna.samplers.NSGAIISampler(),
-    'qmc': optuna.samplers.QMCSampler()
+    'qmc': optuna.samplers.QMCSampler(),
+    'gp': optuna.samplers.GPSampler(seed=0),
+    'bayes': optuna.integration.BoTorchSampler()
     }
 
 
@@ -70,48 +94,71 @@ def get_res(json_file: str):
     return data['SeedBinSizeR'] + data['MaxSeedsPerSpM'] - data['NmaxPerSurface'] + data['ImpactMax'] - data['PropagationMaxSteps']
 
 
-def opt_func(SeedBinSizeR, MaxSeedsPerSpM, ImpactMax, PropagationMaxSteps, NmaxPerSurface):
+def opt_func(dct_params: dict):
     '''func to optimize (black-box)'''
 
-    dct_vals = {
-        "SeedBinSizeR": SeedBinSizeR,
-        "MaxSeedsPerSpM": MaxSeedsPerSpM,
-        "ImpactMax": ImpactMax,
-        "PropagationMaxSteps": PropagationMaxSteps,
-        "NmaxPerSurface": NmaxPerSurface
-        }
-    dct_vals = {**dct_vals, **fixed_params}
+    dct_vals = {**dct_params, **fixed_params}
     name = to_json(dct_vals)
     res = get_res(name)
-    return -res
+    return res
 
 
 def write_log(_, trial):
     '''custom callback'''
 
-    logging.info(f'Efficiency: {trial.value}, params: {trial.params}')
+    eff = trial.value
+    params = {repr(key): val for key, val in trial.params.items()}
+    num = trial.number
+
+    logging.info(f'"{num}":\n\t{{"eff": {eff}, \n\t"params": {params}}},')
 
 
 def objective(trial):
     '''optuna func to optimize'''
 
-    SeedBinSizeR = trial.suggest_int("SeedBinSizeR", 6, 36, 1)
-    MaxSeedsPerSpM = trial.suggest_int("MaxSeedsPerSpM", 1, 10, 1)
-    ImpactMax = trial.suggest_int("ImpactMax", 10, 100)
-    PropagationMaxSteps = trial.suggest_int("PropagationMaxSteps", 100, 10000, 100)
-    NmaxPerSurface = trial.suggest_int("NmaxPerSurface", 1, 10)
+    SeedBinSizeR = trial.suggest_int("SeedBinSizeR", 6, 36, step=1)
+    SeedDeltaRmin = trial.suggest_int("SeedDeltaRmin", 5, 20, step=1)
+    SeedDeltaRmax = trial.suggest_int("SeedDeltaRmax", 30, 120, step=2)
+    SeedDeltaZmax = trial.suggest_int("SeedDeltaZmax", 10, 40, step=2)
+    SigmaScattering = trial.suggest_int("SigmaScattering", 1, 10, step=1)
+    MaxPtScattering = trial.suggest_int("MaxPtScattering", 1, 10, step=1)
+    RadLengthPerSeed = trial.suggest_float("RadLengthPerSeed", 0.01, 0.1, step=0.01)
+    Chi2max = trial.suggest_int("Chi2max", 15, 60, step=5)
+    MaxSeedsPerSpM = trial.suggest_int("MaxSeedsPerSpM", 1, 10, step=1)
+    ImpactMax = trial.suggest_int("ImpactMax", 10, 100, step=5)
+    PropagationMaxSteps = trial.suggest_int("PropagationMaxSteps", 100, 10000, step=100)
+    NmaxPerSurface = trial.suggest_int("NmaxPerSurface", 1, 10, step=1)
 
-    return opt_func(SeedBinSizeR, MaxSeedsPerSpM, ImpactMax, PropagationMaxSteps, NmaxPerSurface)
+    dct_params = {
+        "SeedBinSizeR": SeedBinSizeR,
+        "SeedDeltaRmin": SeedDeltaRmin,
+        "SeedDeltaRmax": SeedDeltaRmax,
+        "SeedDeltaZmax": SeedDeltaZmax,
+        "SigmaScattering": SigmaScattering,
+        "MaxPtScattering": MaxPtScattering,
+        "RadLengthPerSeed": RadLengthPerSeed,
+        "Chi2max": Chi2max,
+        "MaxSeedsPerSpM": MaxSeedsPerSpM,
+        "ImpactMax": ImpactMax,
+        "PropagationMaxSteps": PropagationMaxSteps,
+        "NmaxPerSurface": NmaxPerSurface
+        }
+
+    return opt_func(dct_params)
 
 
 def main():
     '''main func'''
 
     study = optuna.create_study(
-        sampler=optuna.integration.BoTorchSampler())
-    study.optimize(objective, n_trials=100, callbacks=[write_log])
-    logging.info(f'BEST EFFICIENCY: {study.best_value}, '
-                 f'BEST PARAMS: {study.best_params}')
+        direction='maximize',
+        sampler=samplers_optuna['bayes']
+        )
+    study.optimize(objective, n_trials=1000, callbacks=[write_log])
+    best_params = {repr(key): val for key, val in study.best_params.items()}
+
+    logging.info(f'"best":\n\t{{"eff": {study.best_value}, \n\t"params": {best_params}}}')
+
     with open('best_params.json', 'w', encoding='utf-8') as f:
         json.dump({**study.best_params, **fixed_params}, f, indent=4)
 
