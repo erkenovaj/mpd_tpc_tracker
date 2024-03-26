@@ -10,10 +10,10 @@ logging.basicConfig(filename='param_history.json',
                     format='%(message)s')
 warnings.filterwarnings("ignore", category=optuna.exceptions.ExperimentalWarning)
 
+NUM_TRIALS = 100
 search_space = {}
 
 fixed_params = {
-    "EtaMax": 2.11,
     "PtMin": 0.0,
     "CollisionZmin": -30.0,
     "CollisionZmax": 30.0,
@@ -80,18 +80,10 @@ samplers_optuna = {
 def to_json(dct_vals: dict):
     '''dump to json'''
 
-    name_json = 'params.json'
+    name_json = 'acts_params_config.json'
     with open(name_json, 'w', encoding='utf-8') as f:
         json.dump(dct_vals, f, indent=4)
     return name_json
-
-
-def get_res(json_file: str):
-    '''stub-func'''
-
-    with open(json_file, encoding='utf-8') as f:
-        data = json.load(f)
-    return data['SeedBinSizeR'] + data['MaxSeedsPerSpM'] - data['NmaxPerSurface'] + data['ImpactMax'] - data['PropagationMaxSteps']
 
 
 def opt_func(dct_params: dict):
@@ -99,7 +91,7 @@ def opt_func(dct_params: dict):
 
     dct_vals = {**dct_params, **fixed_params}
     name = to_json(dct_vals)
-    res = get_res(name)
+    res = run(name)
     return res
 
 
@@ -152,9 +144,9 @@ def main():
 
     study = optuna.create_study(
         direction='maximize',
-        sampler=samplers_optuna['bayes']
+        sampler=samplers_optuna['tpe']
         )
-    study.optimize(objective, n_trials=1000, callbacks=[write_log])
+    study.optimize(objective, n_trials=NUM_TRIALS, callbacks=[write_log])
     best_params = {repr(key): val for key, val in study.best_params.items()}
 
     logging.info(f'"best":\n\t{{"eff": {study.best_value}, \n\t"params": {best_params}}}')
