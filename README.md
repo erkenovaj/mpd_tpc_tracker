@@ -16,6 +16,9 @@ _All tests were performed in Python-3.10 on Linux-22.04, Windows 10/11_
 # Installation:
 ```shell
 pip install pandas pyopengl PyQt6 pyqtgraph scipy
+
+# to load large files
+git-lfs pull
 ```
 
 Also you have to install tensorflow in your venv if you want to test post-processing based on Neural Net
@@ -31,3 +34,4 @@ Hotkeys:
 2) Press 's' - Enable/Disable display of data from simulation
 3) Press 't' - Enable/Disable display of track arcs
 4) When you enable multiple post-processing methods at the same time, you can use the number keys (1, 2, etc.) to switch visualization between them
+
