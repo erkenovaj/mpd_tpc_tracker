@@ -22,9 +22,9 @@ def save_log(path, stdout, zip_log=True):
 
 def get_mpdroot_bin_path():
     try:
-        bin_path = os.environ['MPDROOT']
+        bin_path = os.environ['VMCWORKDIR']
     except:
-        print('MPDROOT environment variable is not set. '
+        print('VMCWORKDIR environment variable is not set. '
               'Please run config/env.sh.')
         raise
     return bin_path
@@ -49,25 +49,45 @@ def run_acts(
     return rout.stdout
 
 
-def parse_output(arg):
-    val_s = None
-    recompile = re.compile("^Total efficiency \\(nReco\\).* (.*)$")
-
-    arg_sp = arg.split(os.linesep)
-
-    for l in arg_sp:
-        match = recompile.match(l)
-        if not match:
-            continue
-        val_s = match.group(1)
-    val = -1
+def parse_line(line, recompile):
+    match = recompile.match(line)
+    if not match:
+        return
+    val_s = match.group(1)
+    val = None
     try:
         val = float(val_s)
     except:
         print(f'Error: can not convert "{val_s}" to float')
     return val
 
-# Run ACTS, parse stdout, return some value.
+
+def parse_output(arg):
+    eff_all_compile  = re.compile("^Total efficiency.*all particles.* (.*)$")
+    eff_sel_compile  = re.compile("^Total efficiency.*selected particles.* (.*)$")
+    fake_all_compile = re.compile("^Total fake rate.*all particles.* (.*)$")
+    fake_sel_compile = re.compile("^Total fake rate.*selected particles.* (.*)$")
+
+    eff_all  = None
+    eff_sel  = None
+    fake_all = None
+    fake_sel = None
+    arg_sp = arg.split(os.linesep)
+
+    for l in arg_sp:
+        if (v1 := parse_line(l, eff_all_compile))  is not None: eff_all  = v1
+        if (v2 := parse_line(l, eff_sel_compile))  is not None: eff_sel  = v2
+        if (v3 := parse_line(l, fake_all_compile)) is not None: fake_all = v3
+        if (v4 := parse_line(l, fake_sel_compile)) is not None: fake_sel = v4
+
+    eff_all  = -1 if eff_all  is None else eff_all
+    eff_sel  = -1 if eff_sel  is None else eff_sel
+    fake_all = -1 if fake_all is None else fake_all
+    fake_sel = -1 if fake_sel is None else fake_sel
+
+    return eff_all, eff_sel, fake_all, fake_sel
+
+# Run ACTS, parse stdout, return some values.
 # This value must be non-negative. Otherwise some error occured.
 def run(
         json_fname,
@@ -94,8 +114,8 @@ def run(
     return val
 
 # test
-# infile = '/root/file'
-# json = '/path/to/json/file'
+infile = '/media/space/pbelecky/hep/root_files/1000ev/z_fixed_v2/evetest.root'
+json = '/home/belecky/work/mpdroot/git_dj/reconstruction/acts-tracking/acts_params_config.json'
 #
-# eff = run(json, infile=infile, log=True, log_dir='/tmp')
-# print(f"eff = {eff}")
+eff = run(json, infile=infile, log=True, log_dir='/tmp')
+print(f"eff = {eff}")
