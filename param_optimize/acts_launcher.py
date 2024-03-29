@@ -43,10 +43,10 @@ def run_acts(
     macro_s = f'{macro}("{infile}", "{outfile}", {start_event}, {n_events})'
     cmd_l = ['root', '-q', '-b', f"'{macro_s}'"]
     cmd_s = ' '.join(cmd_l)
-    rout = subprocess.run(
+    out = subprocess.run(
             cmd_s, text=True, shell=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return rout.stdout
+    return out.stdout
 
 
 def parse_line(line, recompile):
@@ -63,29 +63,29 @@ def parse_line(line, recompile):
 
 
 def parse_output(arg):
-    eff_all_compile  = re.compile("^Total efficiency.*all particles.* (.*)$")
     eff_sel_compile  = re.compile("^Total efficiency.*selected particles.* (.*)$")
-    fake_all_compile = re.compile("^Total fake rate.*all particles.* (.*)$")
+    eff_all_compile  = re.compile("^Total efficiency.*all particles.* (.*)$")
     fake_sel_compile = re.compile("^Total fake rate.*selected particles.* (.*)$")
+    fake_all_compile = re.compile("^Total fake rate.*all particles.* (.*)$")
 
-    eff_all  = None
     eff_sel  = None
-    fake_all = None
+    eff_all  = None
     fake_sel = None
+    fake_all = None
     arg_sp = arg.split(os.linesep)
 
     for l in arg_sp:
-        if (v1 := parse_line(l, eff_all_compile))  is not None: eff_all  = v1
-        if (v2 := parse_line(l, eff_sel_compile))  is not None: eff_sel  = v2
-        if (v3 := parse_line(l, fake_all_compile)) is not None: fake_all = v3
-        if (v4 := parse_line(l, fake_sel_compile)) is not None: fake_sel = v4
+        if (v1 := parse_line(l, eff_sel_compile))  is not None: eff_sel  = v1
+        if (v2 := parse_line(l, eff_all_compile))  is not None: eff_all  = v2
+        if (v3 := parse_line(l, fake_sel_compile)) is not None: fake_sel = v3
+        if (v4 := parse_line(l, fake_all_compile)) is not None: fake_all = v4
 
-    eff_all  = -1 if eff_all  is None else eff_all
     eff_sel  = -1 if eff_sel  is None else eff_sel
-    fake_all = -1 if fake_all is None else fake_all
+    eff_all  = -1 if eff_all  is None else eff_all
     fake_sel = -1 if fake_sel is None else fake_sel
+    fake_all = -1 if fake_all is None else fake_all
 
-    return eff_all, eff_sel, fake_all, fake_sel
+    return eff_sel, eff_all, fake_sel, fake_all
 
 # Run ACTS, parse stdout, return some values.
 # This value must be non-negative. Otherwise some error occured.
@@ -114,8 +114,8 @@ def run(
     return val
 
 # test
-infile = '/media/space/pbelecky/hep/root_files/1000ev/z_fixed_v2/evetest.root'
-json = '/home/belecky/work/mpdroot/git_dj/reconstruction/acts-tracking/acts_params_config.json'
+#infile = '/path/to/input/root/file'
+#json = '/path/to/acts_params_config.json'
 #
-eff = run(json, infile=infile, log=True, log_dir='/tmp')
-print(f"eff = {eff}")
+#eff = run(json, infile=infile, log=True, log_dir='/tmp')
+#print(f"eff = {eff}")
