@@ -110,8 +110,8 @@ def run(
         outfile=outfile)
     if log:
         save_log(log_dir, stdout)
-    val = parse_output(stdout)
-    return val
+    eff_sel, eff_all, fake_sel, fake_all = parse_output(stdout)
+    return eff_sel, eff_all, fake_sel, fake_all
 
 # test
 #infile = '/path/to/input/root/file'

@@ -8,7 +8,7 @@ from acts_launcher import run
 
 warnings.filterwarnings("ignore", category=optuna.exceptions.ExperimentalWarning)
 
-NUM_TRIALS = 200
+NUM_TRIALS = None
 LOG_DIR = 'log_params'
 
 search_space = {}
@@ -87,18 +87,31 @@ def opt_func(dct_params: dict):
 
     dct_vals = {**dct_params, **fixed_params}
     name = to_json(dct_vals)
-    res = run(name)
-    return res
+    eff_sel, eff_all, fake_sel, fake_all = run(name)
+    return eff_sel, eff_all, fake_sel, fake_all
 
 
 def write_log(_, trial):
     '''custom callback'''
 
-    eff = trial.value
+    eff_sel, eff_all, fake_sel, fake_all = trial.values
+
     params = {repr(key): val for key, val in trial.params.items()}
     num = trial.number
 
-    logging.info(f'"{num}":\n\t{{"eff": {eff}, \n\t"params": {params}}},')
+    duration_sec = trial.duration.total_seconds()
+    minutes = round((duration_sec % 3600) / 60, 3)
+
+    dr = f'\n\t"duration(min)": {minutes},'
+    es = f'\n\t"eff_sel": {eff_sel},'
+    ea = f'\n\t"eff_all": {eff_all},'
+    fs = f'\n\t"fake_sel": {fake_sel},'
+    fa = f'\n\t"fake_all": {fake_all},'
+    pm = f'\n\t"params": {params}'
+
+    msg = f'"{num}": {{{dr}{es}{ea}{fs}{fa}{pm}}},'
+
+    logging.info(msg)
 
 
 def objective(trial):
@@ -141,8 +154,10 @@ def objective(trial):
         "PropagationMaxSteps": PropagationMaxSteps,
         "NmaxPerSurface": NmaxPerSurface
         }
+    
+    eff_sel, eff_all, fake_sel, fake_all = opt_func(dct_params)
 
-    return opt_func(dct_params)
+    return eff_sel, eff_all, fake_sel, fake_all
 
 
 def main():
@@ -161,16 +176,15 @@ def main():
                         )
 
     study = optuna.create_study(
-        direction='maximize',
+        directions=["maximize", "maximize", "minimize", "minimize"],
         sampler=samplers_optuna['random']
         )
     study.optimize(objective, n_trials=NUM_TRIALS, callbacks=[write_log], n_jobs=1)
-    best_params = {repr(key): val for key, val in study.best_params.items()}
-
-    logging.info(f'"best":\n\t{{"eff": {study.best_value}, \n\t"params": {best_params}}}')
+    best_trial = max(study.best_trials, key=lambda t: t.values[0])
+    best_params = best_trial.params
 
     with open('best_params.json', 'w', encoding='utf-8') as f:
-        json.dump({**study.best_params, **fixed_params}, f, indent=4)
+        json.dump({**best_params, **fixed_params}, f, indent=4)
 
 
 if __name__ == "__main__":
