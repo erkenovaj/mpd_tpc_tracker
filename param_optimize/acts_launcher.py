@@ -49,16 +49,16 @@ def run_acts(
     return out.stdout
 
 
-def parse_line(line, recompile):
+def parse_line(line, recompile, type_to_cast=float):
     match = recompile.match(line)
     if not match:
         return
     val_s = match.group(1)
     val = None
     try:
-        val = float(val_s)
+        val = type_to_cast(val_s)
     except:
-        print(f'Error: can not convert "{val_s}" to float')
+        print(f'Error: can not convert "{val_s}" to {type_to_cast}')
     return val
 
 
@@ -67,11 +67,13 @@ def parse_output(arg):
     eff_all_compile  = re.compile("^Total efficiency.*all particles.* (.*)$")
     fake_sel_compile = re.compile("^Total fake rate.*selected particles.* (.*)$")
     fake_all_compile = re.compile("^Total fake rate.*all particles.* (.*)$")
+    memory_compile   = re.compile("^.*Memory.*virtual (.*) KB$")
 
     eff_sel  = None
     eff_all  = None
     fake_sel = None
     fake_all = None
+    memory   = None
     arg_sp = arg.split(os.linesep)
 
     for l in arg_sp:
@@ -79,13 +81,16 @@ def parse_output(arg):
         if (v2 := parse_line(l, eff_all_compile))  is not None: eff_all  = v2
         if (v3 := parse_line(l, fake_sel_compile)) is not None: fake_sel = v3
         if (v4 := parse_line(l, fake_all_compile)) is not None: fake_all = v4
+        if (v5 := parse_line(l, memory_compile, type_to_cast=int)) is not None:
+            memory = v5
 
     eff_sel  = -1 if eff_sel  is None else eff_sel
     eff_all  = -1 if eff_all  is None else eff_all
     fake_sel = -1 if fake_sel is None else fake_sel
     fake_all = -1 if fake_all is None else fake_all
+    memory   = -1 if memory   is None else memory
 
-    return eff_sel, eff_all, fake_sel, fake_all
+    return eff_sel, eff_all, fake_sel, fake_all, memory
 
 # Run ACTS, parse stdout, return some values.
 # This value must be non-negative. Otherwise some error occured.
@@ -110,8 +115,9 @@ def run(
         outfile=outfile)
     if log:
         save_log(log_dir, stdout)
-    eff_sel, eff_all, fake_sel, fake_all = parse_output(stdout)
-    return eff_sel, eff_all, fake_sel, fake_all
+    eff_sel, eff_all, fake_sel, fake_all, memory = parse_output(stdout)
+    return eff_sel, eff_all, fake_sel, fake_all, memory
+
 
 # test
 #infile = '/path/to/input/root/file'
