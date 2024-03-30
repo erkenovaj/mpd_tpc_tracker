@@ -87,14 +87,14 @@ def opt_func(dct_params: dict):
 
     dct_vals = {**dct_params, **fixed_params}
     name = to_json(dct_vals)
-    eff_sel, eff_all, fake_sel, fake_all = run(name)
-    return eff_sel, eff_all, fake_sel, fake_all
+    eff_sel, eff_all, fake_sel, fake_all, memory = run(name)
+    return eff_sel, eff_all, fake_sel, fake_all, memory
 
 
 def write_log(_, trial):
     '''custom callback'''
 
-    eff_sel, eff_all, fake_sel, fake_all = trial.values
+    eff_sel, eff_all, fake_sel, fake_all, memory = trial.values
 
     params = {repr(key): val for key, val in trial.params.items()}
     num = trial.number
@@ -103,13 +103,14 @@ def write_log(_, trial):
     minutes = round((duration_sec % 3600) / 60, 3)
 
     dr = f'\n\t"duration(min)": {minutes},'
+    me = f'\n\t"memory": {memory},'
     es = f'\n\t"eff_sel": {eff_sel},'
     ea = f'\n\t"eff_all": {eff_all},'
     fs = f'\n\t"fake_sel": {fake_sel},'
     fa = f'\n\t"fake_all": {fake_all},'
     pm = f'\n\t"params": {params}'
 
-    msg = f'"{num}": {{{dr}{es}{ea}{fs}{fa}{pm}}},'
+    msg = f'"{num}": {{{dr}{me}{es}{ea}{fs}{fa}{pm}}},'
 
     logging.info(msg)
 
@@ -155,9 +156,9 @@ def objective(trial):
         "NmaxPerSurface": NmaxPerSurface
         }
     
-    eff_sel, eff_all, fake_sel, fake_all = opt_func(dct_params)
+    eff_sel, eff_all, fake_sel, fake_all, memory = opt_func(dct_params)
 
-    return eff_sel, eff_all, fake_sel, fake_all
+    return eff_sel, eff_all, fake_sel, fake_all, memory
 
 
 def main():
@@ -176,7 +177,7 @@ def main():
                         )
 
     study = optuna.create_study(
-        directions=["maximize", "maximize", "minimize", "minimize"],
+        directions=["maximize", "maximize", "minimize", "minimize", "minimize"],
         sampler=samplers_optuna['random']
         )
     study.optimize(objective, n_trials=NUM_TRIALS, callbacks=[write_log], n_jobs=1)
