@@ -53,7 +53,7 @@ def post_process():
         save_to_files.write_track_candidates_header(fname)
 
 #   dirs = ['data/tracks_data']
-    dirs = [ \
+    dirs = [
             '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/0_1000',
             '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/1000_1800',
             '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/1801_2989',
@@ -65,35 +65,37 @@ def post_process():
     ]
 
 #   track_candidates_params_fname = "data/data_for_ml/track_candidates_params.csv"
-    track_candidates_params_fname = \
-        "/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/track_candidates_params.txt"
-
-    print("Before reading csv")
-    print (datetime.datetime.now())
-    nn_data = pd.read_csv(track_candidates_params_fname)
-    print("After reading csv")
-    print (datetime.datetime.now())
+#     track_candidates_params_fname = \
+#         "/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/track_candidates_params.txt"
 
     start_event = 0
     end_event = 6203
 
+    # Upload data and settings for NNS (Can be commented out if you don't use NNS)
+    model = create_model()
+    model.load_weights('data/data_for_ml/checkpoint_dir/cp.ckpt')
+
     for iEvent in range(start_event, end_event + 1):
         print(f"Event #{iEvent}")
 
-        prototracks_fname = find_file(
-                f"event_{iEvent}_prototracks.txt", dirs)
-        space_points_fname = find_file(
-                f"event_{iEvent}_space_points.txt", dirs)
-        mc_track_params_fname = find_file(
-                f"event_{iEvent}_mc_track_params.txt", dirs)
+        prototracks_fname = find_file(f"event_{iEvent}_prototracks.txt", dirs)
+        space_points_fname = find_file(f"event_{iEvent}_space_points.txt", dirs)
+        mc_track_params_fname = find_file(f"event_{iEvent}_mc_track_params.txt", dirs)
+        track_candidates_params = find_file(f"track_candidates_params_event_{iEvent}", dirs)
 
-        if (prototracks_fname     == "") or \
-           (space_points_fname    == "") or \
-           (mc_track_params_fname == ""):
+        if (prototracks_fname       == "") or \
+           (space_points_fname      == "") or \
+           (mc_track_params_fname   == "") or \
+           (track_candidates_params == ""):
             print(f"WARNING: post_process(): iEvent: {iEvent}: can not find input file")
             continue
 
         # Upload data
+        print("Before reading csv")
+        print(datetime.datetime.now())
+        df = pd.read_csv(track_candidates_params)
+        print("After reading csv")
+        print(datetime.datetime.now())
 
         data_from_get_tracks_data = get_tracks_data(prototracks_fname,
                                                     space_points_fname)
@@ -106,27 +108,27 @@ def post_process():
             exit()
 
         result = {"RAW": get_tracks_data(prototracks_fname, space_points_fname)}
+
+        # Check prototracks file not empty
+        if not result.get("RAW"):
+            print(f"WARNING: post_process(): iEvent: {iEvent}: no input prototracks")
+            continue
         hit_list = get_hits(space_points_fname)
         trackId_to_track_params = get_trackId_to_track_params(
                 mc_track_params_fname)
         trackId_to_hits_dict = get_trackId_to_hits_dict(
                 space_points_fname, trackId_to_track_params)
 
-        # Upload data and settings for NNS (Can be commented out if you don't use NNS)
-        model = create_model()
-        model.load_weights('data/data_for_ml/checkpoint_dir/cp.ckpt')
+
 #       nn_data = pd.read_csv(track_candidates_params_fname)
 
-        df = nn_data[nn_data['#format:eventNumber'] == iEvent]
         indices = df['prototrackIndex']
-        event_num = df['#format:eventNumber']
-        df = df.iloc[:, 2:-2]
-
+        df = df.iloc[:, 1:-2]
         # Use methods
         if df.size == 0:
             result["NNS"] = [[]]
         else:
-            result["NNS"] = cluster_and_neural_net(model, deepcopy(result.get("RAW")), df, event_num, indices, hits=3)
+            result["NNS"] = cluster_and_neural_net(model, deepcopy(result.get("RAW")), df, iEvent, indices, hits=3)
 
         result["PWS"] = direct_cleaning(deepcopy(result.get("RAW")))
         result["PWM"] = direct_merging(deepcopy(result.get("RAW")))
