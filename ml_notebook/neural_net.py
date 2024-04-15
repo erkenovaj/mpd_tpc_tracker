@@ -78,11 +78,11 @@ def leading_track(event_num, hits=3):
             hits = dct[track_id]
             event_curr_good.append(hits)
             break
-    # track_dict = get_hits_data(f"../data/event_{event_num}_space_points.txt")
-    # hit_list = get_hits_data_for_validation(f"../data/event_{event_num}_space_points.txt")
-    # track_id_dict = get_track_id(f"../data/event_{event_num}_trackIds.txt")
+    # trackId_to_hits_dict = get_trackId_to_hits_dict(f"../data/event_{event_num}_space_points.txt")
+    # hit_list = get_hits(f"../data/event_{event_num}_space_points.txt")
+    # trackId_to_track_params = get_trackId_to_track_params(f"../data/event_{event_num}_trackIds.txt")
 
-    # characteristic_dict = validation.calc_characteristics(event_curr_good, hit_list, track_dict, track_id_dict)
+    # characteristic_dict = validation.calc_characteristics(event_curr_good, hit_list, trackId_to_hits_dict, trackId_to_track_params)
     # return characteristic_dict
 
     return event_curr_good
