@@ -1,19 +1,23 @@
+from functools import partial
 import os
+import sys
 import json
 import logging
 import warnings
 import datetime
 import optuna
 from acts_launcher import run
+from argparse import ArgumentParser
 
 warnings.filterwarnings("ignore", category=optuna.exceptions.ExperimentalWarning)
-
-NUM_TRIALS = None
-LOG_DIR = 'log_params'
 
 search_space = {}
 
 fixed_params = {
+    "SelectorPtMax": 10.0,
+    "NmaxPerSurface": 5,
+    "MaxPtScattering": 5.0,
+    "SeedBinSizeR": 10.0,
     "CollisionZmin": -300.0,
     "CollisionZmax": 300.0,
     "SigmaLoc0": 0.5,
@@ -59,7 +63,7 @@ fixed_params = {
     "OnlyCertainTracks": False,
     "DumpData": False,
     "WriteTrajSummary": False
-    }
+}
 
 samplers_optuna = {
     'grid': optuna.samplers.GridSampler(search_space),
@@ -70,7 +74,7 @@ samplers_optuna = {
     'qmc': optuna.samplers.QMCSampler(),
     'gp': optuna.samplers.GPSampler(seed=0),
     'bayes': optuna.integration.BoTorchSampler()
-    }
+}
 
 
 def to_json(dct_vals: dict):
@@ -82,12 +86,12 @@ def to_json(dct_vals: dict):
     return name_json
 
 
-def opt_func(dct_params: dict):
+def opt_func(dct_params: dict, n_events: int):
     '''func to optimize (black-box)'''
 
     dct_vals = {**dct_params, **fixed_params}
     name = to_json(dct_vals)
-    eff_sel, eff_all, fake_sel, fake_all, memory = run(name)
+    eff_sel, eff_all, fake_sel, fake_all, memory = run(name, n_events=n_events)
     return eff_sel, eff_all, fake_sel, fake_all, memory
 
 
@@ -115,77 +119,113 @@ def write_log(_, trial):
     logging.info(msg)
 
 
-def objective(trial):
+def objective(trial, n_events):
     '''optuna func to optimize'''
 
-    SeedBinSizeR = trial.suggest_int("SeedBinSizeR", 6, 36, step=1)
+    #SeedBinSizeR = trial.suggest_int("SeedBinSizeR", 6, 36, step=1) # no-effect
     SeedDeltaRmin = trial.suggest_int("SeedDeltaRmin", 5, 20, step=1)
     SeedDeltaRmax = trial.suggest_int("SeedDeltaRmax", 30, 120, step=2)
     SeedDeltaZmax = trial.suggest_int("SeedDeltaZmax", 100, 400, step=2)
     SigmaScattering = trial.suggest_int("SigmaScattering", 1, 10, step=1)
-    MaxPtScattering = trial.suggest_int("MaxPtScattering", 1, 10, step=1)
+    #MaxPtScattering = trial.suggest_int("MaxPtScattering", 1, 10, step=1) # no-effect
     RadLengthPerSeed = trial.suggest_float("RadLengthPerSeed", 0.01, 0.1, step=0.01)
     Chi2max = trial.suggest_int("Chi2max", 15, 60, step=5)
     MaxSeedsPerSpM = trial.suggest_int("MaxSeedsPerSpM", 1, 10, step=1)
     ImpactMax = trial.suggest_int("ImpactMax", 10, 100, step=5)
     PropagationMaxSteps = trial.suggest_int("PropagationMaxSteps", 100, 1000, step=100)
-    NmaxPerSurface = trial.suggest_int("NmaxPerSurface", 1, 10, step=1)
-    SelectorPtMax = trial.suggest_int("SelectorPtMax", 2, 10, step=1)
+    #NmaxPerSurface = trial.suggest_int("NmaxPerSurface", 1, 10, step=1) # no-effect
     EtaMax = trial.suggest_float("EtaMax", 1.8, 2.2, step=0.04)
     PtMin = trial.suggest_float("PtMin", 0.04, 0.1, step=0.002)
     BeamX = trial.suggest_int("BeamX", 0, 10, step=1)
     BeamY = trial.suggest_int("BeamY", 0, 10, step=1)
 
     dct_params = {
-        "SelectorPtMax": SelectorPtMax,
         "EtaMax": EtaMax,
         "PtMin": PtMin,
         "BeamX": BeamX,
         "BeamY": BeamY,
-        "SeedBinSizeR": SeedBinSizeR,
         "SeedDeltaRmin": SeedDeltaRmin,
         "SeedDeltaRmax": SeedDeltaRmax,
         "SeedDeltaZmax": SeedDeltaZmax,
         "SigmaScattering": SigmaScattering,
-        "MaxPtScattering": MaxPtScattering,
         "RadLengthPerSeed": RadLengthPerSeed,
         "Chi2max": Chi2max,
         "MaxSeedsPerSpM": MaxSeedsPerSpM,
         "ImpactMax": ImpactMax,
-        "PropagationMaxSteps": PropagationMaxSteps,
-        "NmaxPerSurface": NmaxPerSurface
-        }
+        "PropagationMaxSteps": PropagationMaxSteps
+    }
     
-    eff_sel, eff_all, fake_sel, fake_all, memory = opt_func(dct_params)
+    eff_sel, eff_all, fake_sel, fake_all, memory = opt_func(dct_params, n_events)
 
     return eff_sel, eff_all, fake_sel, fake_all, memory
 
 
-def main():
-    '''main func'''
+def run_optimization(logdir: str,
+                     n_trials: int or None,
+                     method: str,
+                     n_events: int):
+    '''main func for optimization'''
 
-    if not os.path.isdir(LOG_DIR):
-        new_dirpath = os.path.join(os.getcwd(), LOG_DIR)
+    if not os.path.isdir(logdir):
+        new_dirpath = os.path.join(os.getcwd(), logdir)
         os.mkdir(new_dirpath)
 
     curr_time = datetime.datetime.now()
     timestamp = datetime.datetime.strftime(curr_time, "%Y-%d-%m-%H-%M-%S")
-    logging.basicConfig(filename=f'{LOG_DIR}/param_history_{timestamp}.json',
-                        filemode='w', encoding='utf-8',
-                        level=logging.INFO,
-                        format='%(message)s'
-                        )
+    logging.basicConfig(
+        filename=f'{logdir}/param_history_{timestamp}.json',
+        filemode='w', encoding='utf-8',
+        level=logging.INFO,
+        format='%(message)s'
+    )
+
+    if method in samplers_optuna:
+        sampler = samplers_optuna[method]
+    else:
+        print('Incorrect method type. ',
+              'See possible choices by running black-box-opt.py -h')
+        sys.exit(1)
 
     study = optuna.create_study(
         directions=["maximize", "maximize", "minimize", "minimize", "minimize"],
-        sampler=samplers_optuna['random']
-        )
-    study.optimize(objective, n_trials=NUM_TRIALS, callbacks=[write_log], n_jobs=1)
+        sampler=sampler
+    )
+    study.optimize(partial(objective, n_events=n_events), n_trials=n_trials, callbacks=[write_log], n_jobs=1)
     best_trial = max(study.best_trials, key=lambda t: t.values[0])
     best_params = best_trial.params
 
     with open('best_params.json', 'w', encoding='utf-8') as f:
         json.dump({**best_params, **fixed_params}, f, indent=4)
+
+
+def main():
+    parser = ArgumentParser(
+        usage='''
+    black-box-opt.py <optional params>
+    Example: black-box-opt.py -logdir logs -n_trials 100 -method random -n_events 20
+    Run black-box-opt.py -h for more information about args.
+        ''',
+        description='Param optimization')
+
+    parser.add_argument('-logdir',
+                        help='directory where optimization logs will be saved',
+                        default='log_params')
+    parser.add_argument('-n_trials',
+                        help='number of optimizer iterations',
+                        type=int,
+                        default=None)
+    parser.add_argument('-method',
+                        choices=['random', 'tpe', 'cmaes', 'nsgaii', 'qmc', 'gp', 'bayes'],
+                        default='random',
+                        help='method by which the search for optimal parameters is carried out')
+    parser.add_argument('-n_events',
+                        default=20,
+                        type=int,
+                        help='number of events for tracker')
+    
+    args = parser.parse_args()
+
+    run_optimization(args.logdir, args.n_trials, args.method, args.n_events)
 
 
 if __name__ == "__main__":
