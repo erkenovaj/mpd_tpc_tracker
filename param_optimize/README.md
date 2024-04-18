@@ -30,17 +30,17 @@ python3 param_optimize/black-box-opt.py -logdir logs -n_trials 100 -method rando
 ```
 
 # Опциональные параметры скрипта:
-* **-logdir** – директория для сохранения логов поиска гиперпараметров (<span style="color:blue">значение по умолчанию: log_params</span>, если такой папки нет, она будет создана в директории запуска скрипта);
-* **-n_trials** – число "эпох", то есть количество вызовов целевой функции (<span style="color:blue">значение по умолчанию: None</span>, то есть перебор всех возможных значений. Если нет необходимости ограничивать поиск оптимальных значений количеством итераций, то не стоит указывать этот параметр);
-* **-method** – выбор алгоритма для поиска гиперпараметров (см. ниже) (<span style="color:blue">значение по умолчанию: random</span>), доступные значения:
-                + <span style="color:green">_random_</span> – случайный поиск (RandomSearch),
-                + <span style="color:green">_tpe_</span> – древовидный парзеновский оценщик (англ. _Tree-structured Parzen Estimator, TPE_),
-                + <span style="color:green">_cmaes_</span> – стратегия эволюции адаптации ковариационной матрицы (англ. _Covariance Matrix Adaptation Evolution Strategy, CMA-ES_),
-                + <span style="color:green">_nsgaii_</span> – генетический алгоритм с недоминируемой сортировкой (англ. _Non-Dominated Sorting Genetic Algorithm, NSGA-II_), 
-                + <span style="color:green">_qmc_</span> – квази Монте-Карло (англ. _Quasi-Monte Carlo, QMC_), 
-                + <span style="color:green">_gp_</span> – байесовская оценка гауссовского процесса (англ. _Gaussian process-based Bayesian optimization, GP_),
-                + <span style="color:green">_bayes_</span> – байесовская оптимизация (Bayesian Optimization).
-* **-n_events** – число событий для трекера (<span style="color:blue">значение по умолчанию: 20</span>)
+* **-logdir** – директория для сохранения логов поиска гиперпараметров (<u>значение по умолчанию: log_params</u>, если такой папки нет, она будет создана в директории запуска скрипта);
+* **-n_trials** – число "эпох", то есть количество вызовов целевой функции (<u>значение по умолчанию: 200</u>, если введённое значение < 1, число эпох не будет ограничено, то есть будет осуществляться полный перебор);
+* **-method** – выбор алгоритма для поиска гиперпараметров (см. ниже) (<u>значение по умолчанию: random</u>), доступные значения:
+    + _random_ – случайный поиск (RandomSearch),
+    + _tpe_ – древовидный парзеновский оценщик (англ. _Tree-structured Parzen Estimator, TPE_),
+    + _cmaes_ – стратегия эволюции адаптации ковариационной матрицы (англ. _Covariance Matrix Adaptation Evolution Strategy, CMA-ES_),
+    + _nsgaii_ – генетический алгоритм с недоминируемой сортировкой (англ. _Non-Dominated Sorting Genetic Algorithm, NSGA-II_), 
+    + _qmc_ – квази Монте-Карло (англ. _Quasi-Monte Carlo, QMC_), 
+    + _gp_ – байесовская оценка гауссовского процесса (англ. _Gaussian process-based Bayesian optimization, GP_),
+    + _bayes_ – байесовская оптимизация (Bayesian Optimization).
+* **-n_events** – число событий для трекера (<u>значение по умолчанию: 20</u>)
 
 # Доступные алгоритмы оптимизации:
 

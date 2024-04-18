@@ -190,6 +190,9 @@ def run_optimization(logdir: str,
         directions=["maximize", "maximize", "minimize", "minimize", "minimize"],
         sampler=sampler
     )
+    if n_trials < 1:
+        n_trials = None
+
     study.optimize(partial(objective, n_events=n_events), n_trials=n_trials, callbacks=[write_log], n_jobs=1)
     best_trial = max(study.best_trials, key=lambda t: t.values[0])
     best_params = best_trial.params
@@ -213,7 +216,7 @@ def main():
     parser.add_argument('-n_trials',
                         help='number of optimizer iterations',
                         type=int,
-                        default=None)
+                        default=200)
     parser.add_argument('-method',
                         choices=['random', 'tpe', 'cmaes', 'nsgaii', 'qmc', 'gp', 'bayes'],
                         default='random',
