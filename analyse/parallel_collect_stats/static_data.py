@@ -9,5 +9,6 @@ analyse_methods = {
     "PGS": graph_cleaning,
     "PGM": graph_merging,
     "HCF": coverage_cleaning,
-    "NNS": cluster_and_neural_net
+    "NNS": cluster_and_neural_net,
+    "RAW": list
 }
