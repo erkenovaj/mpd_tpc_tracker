@@ -116,6 +116,7 @@ def post_process():
 
         df = pd.read_csv(track_candidates_params)
         indices = df['prototrackIndex']
+#       df = df.iloc[:, 1:-2]
         df = df.iloc[:, 2:-2]
 
         # Use methods
