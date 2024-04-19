@@ -128,7 +128,8 @@ def post_process():
         if df.size == 0:
             result["NNS"] = [[]]
         else:
-            result["NNS"] = cluster_and_neural_net(model, deepcopy(result.get("RAW")), df, iEvent, indices, hits=3)
+            result["NNS"] = cluster_and_neural_net(model, deepcopy(result.get("RAW")), df,
+                                                   pd.Series([iEvent] * len(df)), indices, hits=3)
 
         result["PWS"] = direct_cleaning(deepcopy(result.get("RAW")))
         result["PWM"] = direct_merging(deepcopy(result.get("RAW")))
