@@ -15,8 +15,8 @@ def split_file(fname):
         first_line = False
         continue
 
-      line_ch = line.replace(' ', '')
-      event_number = int(line_ch.split(',')[0])
+      line = line.replace(' ', '')
+      event_number = int(line.split(',')[0])
 
       if event_number != event_number_prev:
 
