@@ -5,6 +5,7 @@ from post_processing import (direct_merging, graph_merging,
 import config
 import save_to_files
 import datetime
+import psutil
 
 from analyse.validation import calc_characteristics
 from analyse.visualizing import MainWindow
@@ -75,7 +76,7 @@ def post_process():
     print (datetime.datetime.now())
 
     start_event = 0
-    end_event = 6203
+    end_event = 1
 
     for iEvent in range(start_event, end_event + 1):
         print(f"Event #{iEvent}")
@@ -141,7 +142,12 @@ def post_process():
 
             print(f"\n\n################## {post_processing_method} ##################")
             time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            process = psutil.Process()
+
             print(f"{time} event #{iEvent}")
+            mem = round(process.memory_info().rss / (1024**2)) # bytes to Mb
+            print(f"memory: {mem} Mb")
+
             for characteristic, value in characteristic_dict.items():
                 print(f"{characteristic}: {value}")
 
