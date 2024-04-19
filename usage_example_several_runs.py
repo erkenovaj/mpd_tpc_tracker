@@ -28,6 +28,8 @@ def find_file(f_name, dir_list):
         if os.path.exists(full_f_name_local):
             full_f_name = full_f_name_local
             break
+    if (full_f_name == ""):
+        print(f"Warning: find_file(): can not find {f_name}")
     return full_f_name
 
 
@@ -62,7 +64,12 @@ def post_process():
             '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/4186_4364',
             '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/4367_4999',
             '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/5000_5202',
-            '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/5204_6203'
+            '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/5204_6203',
+            '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/6204_7203',
+            '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/7204_8103',
+            '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/8104_8184',
+            '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/8185_9184',
+            '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/9185_9999'
     ]
 
 #   track_candidates_params_fname = "data/data_for_ml/track_candidates_params.csv"
@@ -91,20 +98,12 @@ def post_process():
         if (prototracks_fname     == "") or \
            (space_points_fname    == "") or \
            (mc_track_params_fname == ""):
-            print(f"WARNING: post_process(): iEvent: {iEvent}: can not find input file")
             continue
 
         # Upload data
 
         data_from_get_tracks_data = get_tracks_data(prototracks_fname,
                                                     space_points_fname)
-
-        if (False):
-            print("Printing data_from_get_tracks_data: begin")
-            for i, val in enumerate(data_from_get_tracks_data):
-                print(f"data_from_get_tracks_data: #{i}: {val}")
-            print("Printing data_from_get_tracks_data: end")
-            exit()
 
         result = {"RAW": get_tracks_data(prototracks_fname, space_points_fname)}
         hit_list = get_hits(space_points_fname)
@@ -141,10 +140,11 @@ def post_process():
                 method=post_processing_method)
 
             print(f"\n\n################## {post_processing_method} ##################")
-            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            process = psutil.Process()
 
+            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"{time} event #{iEvent}")
+
+            process = psutil.Process()
             mem = round(process.memory_info().rss / (1024**2)) # bytes to Mb
             print(f"memory: {mem} Mb")
 
