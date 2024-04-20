@@ -7,7 +7,7 @@ import save_to_files
 import datetime
 import psutil
 
-from analyse.validation import calc_characteristics
+from analyse.validation import calc_characteristics, calc_mult
 from analyse.visualizing import MainWindow
 from data_processing.parse_data import *
 from PyQt6.QtWidgets import QApplication
@@ -75,6 +75,9 @@ def post_process():
     dirs_param = [
             '/media/space/pbelecky/hep/mpdroot_bak/dump_pt_eta_2_10000/track_candidates_params'
     ]
+    dirs_mc = [
+            '/home/belecky/work/mpdroot/bin_dump_pdg/macros/common'
+    ]
 
     start_event = 0
     end_event = 1
@@ -88,7 +91,7 @@ def post_process():
 
         prototracks_fname = find_file(f"event_{iEvent}_prototracks.txt", dirs)
         space_points_fname = find_file(f"event_{iEvent}_space_points.txt", dirs)
-        mc_track_params_fname = find_file(f"event_{iEvent}_mc_track_params.txt", dirs)
+        mc_track_params_fname = find_file(f"event_{iEvent}_mc_track_params.txt", dirs_mc)
         track_candidates_params = find_file(f"event_{iEvent}_track_candidates_params.txt", dirs_param)
 
         if (prototracks_fname       == "") or \
@@ -110,6 +113,11 @@ def post_process():
         hit_list = get_hits(space_points_fname)
         trackId_to_track_params = get_trackId_to_track_params(
                 mc_track_params_fname)
+
+        mult_ch_pri = calc_mult(trackId_to_track_params,   # multiplicity by Val Kuz
+                only_pri=True, with_hits=False, charged=True, debug=False)
+        print(f"event_number: {iEvent}; mult_ch_pri(Val) = {mult_ch_pri}")
+
         trackId_to_hits_dict = get_trackId_to_hits_dict(
                 space_points_fname, trackId_to_track_params)
 
@@ -135,7 +143,8 @@ def post_process():
         # Computation efficiency
         for post_processing_method, result_data in result.items():
             characteristic_dict = calc_characteristics(result_data, hit_list, trackId_to_hits_dict, trackId_to_track_params,
-                method=post_processing_method)
+                method=post_processing_method,
+                mult=mult_ch_pri)
 
             print(f"\n\n################## {post_processing_method} ##################")
 
