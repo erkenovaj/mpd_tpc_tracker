@@ -8,7 +8,13 @@ only_primary     = True
 n_proto_hits_min =    6
 ratio            =  0.5
 
-fname_real_tracks = "real_tracks_{}.txt"
-fname_track_candidates  = "track_candidates_{}.txt"
+start_event = 0
+end_event   = 9
+
+i_part      = 0
+n_parts     = 1
+
+fname_real_tracks = "real_tracks_{}_{}.txt"
+fname_track_candidates  = "track_candidates_{}_{}.txt"
 
 visualyse        = False

@@ -44,16 +44,6 @@ def post_process():
       "HCF"
     ]
 
-    for method in methods:
-        fname = config.fname_real_tracks.format(method)
-        if os.path.exists(fname):
-            os.remove(fname)
-        save_to_files.write_real_tracks_header(fname)
-
-        fname = config.fname_track_candidates.format(method)
-        if os.path.exists(fname):
-            os.remove(fname)
-        save_to_files.write_track_candidates_header(fname)
 
 #   dirs = ['data/tracks_data']
     dirs = [
@@ -79,14 +69,30 @@ def post_process():
             '/home/belecky/work/mpdroot/bin_dump_pdg/macros/common'
     ]
 
-    start_event = 0
-    end_event = 1
+    d = int((config.end_event - config.start_event + 1) / config.n_parts)
+    start_event_i = config.start_event + d * config.i_part
+    end_event_i   = config.start_event + d *(config.i_part + 1) - 1
+    out_file_postfix = config.i_part
+
+    print(f"i: {config.i_part}, start_event_i: {start_event_i}, "
+                             f" end_event_i: {end_event_i}")
+
+    for method in methods:
+        fname = config.fname_real_tracks.format(method, out_file_postfix)
+        if os.path.exists(fname):
+            os.remove(fname)
+        save_to_files.write_real_tracks_header(fname)
+
+        fname = config.fname_track_candidates.format(method, out_file_postfix)
+        if os.path.exists(fname):
+            os.remove(fname)
+        save_to_files.write_track_candidates_header(fname)
 
     # Upload data and settings for NNS (Can be commented out if you don't use NNS)
     model = create_model()
     model.load_weights('data/data_for_ml/checkpoint_dir/cp.ckpt')
 
-    for iEvent in range(start_event, end_event + 1):
+    for iEvent in range(start_event_i, end_event_i + 1):
         print(f"Event #{iEvent}")
 
         prototracks_fname = find_file(f"event_{iEvent}_prototracks.txt", dirs)
@@ -144,7 +150,8 @@ def post_process():
         for post_processing_method, result_data in result.items():
             characteristic_dict = calc_characteristics(result_data, hit_list, trackId_to_hits_dict, trackId_to_track_params,
                 method=post_processing_method,
-                mult=mult_ch_pri)
+                mult=mult_ch_pri,
+                out_file_postfix=out_file_postfix)
 
             print(f"\n\n################## {post_processing_method} ##################")
 
