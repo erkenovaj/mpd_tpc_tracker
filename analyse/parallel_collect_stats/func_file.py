@@ -24,8 +24,12 @@ def parse_event_data(event_number: int, dirs: list[str]) -> InputEventData:
     return input_event_data
 
 
-def nns_analyse(event_number: int, ml_data: MlModelData, event_data: InputEventData, nn_method) -> list[TrackData]:
-    ml_data.calc_event_filed(event_number)
+def nns_analyse(event_number: int,
+                ml_data: MlModelData,
+                event_data: InputEventData,
+                nn_method,
+                dirs: list[str]) -> list[TrackData]:
+    ml_data.calc_event_filed(event_number, dirs)
 
     # Skip empty events
     if ml_data.event_df.size != 0:
@@ -45,7 +49,7 @@ def calculate_one_event_stats(event_number: int, dirs: list[str], ml_data: MlMod
     for method_name, method in analyse_methods.items():
         match method_name:
             case "NNS":
-                tracks = nns_analyse(event_number, ml_data, event_data, method)
+                tracks = nns_analyse(event_number, ml_data, event_data, method, dirs)
             case "RAW":
                 tracks = event_data.tracks
             case _:

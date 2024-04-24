@@ -1,31 +1,44 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import Optional
+
 from tf_keras import Sequential
 from pandas import Series, DataFrame
 import pandas as pd
 
 import save_to_files
 from post_processing.cleaning.neural_net import create_model
+from usage_example_several_runs import find_file
 
 
 @dataclass
 class MlModelData:
-    params_file_path: str
     checkpoint_file_path: str
 
+    params_file_path: Optional[str] = None
     indices: Series = field(init=False)
     event_num_ser: Series = field(init=False)
     event_df: DataFrame = field(init=False)
 
-    def calc_event_filed(self, event_num: int):
-        self.event_df = self.base_df[self.base_df['#format:eventNumber'] == event_num]
-        self.indices = self.event_df['prototrackIndex']
-        self.event_num_ser = self.event_df['#format:eventNumber']
-        self.event_df = self.event_df.iloc[:, 2:-2]
+    def calc_event_filed(self, event_num: int, dirs):
+        if self.__is_one_params_file__:
+            self.event_df = self.base_df[self.base_df['#format:eventNumber'] == event_num]
+            self.indices = self.event_df['prototrackIndex']
+            self.event_num_ser = self.event_df['#format:eventNumber']
+            self.event_df = self.event_df.iloc[:, 2:-2]
+        else:
+            ml_params_fname = find_file(f"track_candidates_params_event_{event_num}.csv", dirs)
+            self.event_df = pd.read_csv(ml_params_fname)
+            self.indices = self.event_df['prototrackIndex']
+            self.event_num_ser = pd.Series([event_num] * self.event_df.count())
+            self.event_df = self.event_df.iloc[:, 1:-2]
 
     def __post_init__(self):
         self.model: Sequential = self.__load_model__()
-        self.base_df: DataFrame = pd.read_csv(self.params_file_path)
+        self.__is_one_params_file__ = bool(self.params_file_path)
+
+        if self.__is_one_params_file__:
+            self.base_df: DataFrame = pd.read_csv(self.params_file_path)
 
     def __load_model__(self):
         model = create_model()
