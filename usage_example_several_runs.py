@@ -70,12 +70,14 @@ def post_process():
     ]
 
     d = int((config.end_event - config.start_event + 1) / config.n_parts)
-    start_event_i = config.start_event + d * config.i_part
-    end_event_i   = config.start_event + d *(config.i_part + 1) - 1
-    out_file_postfix = config.i_part
 
-    print(f"i: {config.i_part}, start_event_i: {start_event_i}, "
-                             f" end_event_i: {end_event_i}")
+    i_part = int(sys.argv[1])
+    start_event_i = config.start_event + d * i_part
+    end_event_i   = config.start_event + d *(i_part + 1) - 1
+    out_file_postfix = i_part
+
+    print(f"i: {i_part}, start_event_i: {start_event_i}, "
+          f" end_event_i: {end_event_i}")
 
     for method in methods:
         fname = config.fname_real_tracks.format(method, out_file_postfix)
