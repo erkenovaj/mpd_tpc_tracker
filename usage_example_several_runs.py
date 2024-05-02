@@ -153,7 +153,8 @@ def post_process():
             characteristic_dict = calc_characteristics(result_data, hit_list, trackId_to_hits_dict, trackId_to_track_params,
                 method=post_processing_method,
                 mult=mult_ch_pri,
-                out_file_postfix=out_file_postfix)
+                out_file_postfix=out_file_postfix,
+                event_number=iEvent)
 
             print(f"\n\n################## {post_processing_method} ##################")
 
