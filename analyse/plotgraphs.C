@@ -7,23 +7,23 @@
 
 // Usage:
 //     Plot efficiency VS pt, eta, multiplicity
-// plotgraphs.C("out.root", eff, pt)
-// plotgraphs.C("out.root", eff, eta)
-// plotgraphs.C("out.root", eff, mult)
-// plotgraphs.C("out.root", eff, mult, hits)
-// plotgraphs.C("out.root", eff, mult, charged)
+// root plotgraphs.C("out.root", eff, pt)
+// root plotgraphs.C("out.root", eff, eta)
+// root plotgraphs.C("out.root", eff, mult)
+// root plotgraphs.C("out.root", eff, mult, hits)
+// root plotgraphs.C("out.root", eff, mult, charged)
 
 //     Plot duplicate rate VS pt, eta, multiplicity
-// plotgraphs.C("out.root", duplicates, pt)
-// plotgraphs.C("out.root", duplicates, eta)
-// plotgraphs.C("out.root", duplicates, mult)
-// plotgraphs.C("out.root", duplicates, mult, hits)
-// plotgraphs.C("out.root", duplicates, mult, charged)
+// root plotgraphs.C("out.root", duplicates, pt)
+// root plotgraphs.C("out.root", duplicates, eta)
+// root plotgraphs.C("out.root", duplicates, mult)
+// root plotgraphs.C("out.root", duplicates, mult, hits)
+// root plotgraphs.C("out.root", duplicates, mult, charged)
 
-//     Plot fakes rate VS multiplicity
-// plotgraphs.C("out.root", fakes, mult)
-// plotgraphs.C("out.root", fakes, mult, hits)
-// plotgraphs.C("out.root", fakes, mult, charged)
+//     Plot fake rate VS multiplicity
+// root plotgraphs.C("out.root", fakes, mult)
+// root plotgraphs.C("out.root", fakes, mult, hits)
+// root plotgraphs.C("out.root", fakes, mult, charged)
 
 enum GraphType {
   efficiency,
